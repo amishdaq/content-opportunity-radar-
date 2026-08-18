@@ -70,7 +70,7 @@
 ---
 
 ## 🎥 فيديو توضيحي
-https://drive.google.com/file/d/1wkek6RCP8O3W54fvvNBD5uoI3YL1N-LP/view?usp=drive_link
+https://youtu.be/QmPclT-r3rs
 
 ---
 
