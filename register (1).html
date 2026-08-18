@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>رادار الفرص — سجّل مصادرك</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F8F6F0;
+    --surface: #FFFFFF;
+    --ink: #20261F;
+    --ink-soft: #5B6158;
+    --accent: #3F7D6E;
+    --accent-soft: #E3EFEA;
+    --line: #E4E0D6;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    line-height:1.7;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:1080px;
+    margin:0 auto;
+    padding:56px 24px 80px;
+  }
+  header.top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:48px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:700;
+    font-size:18px;
+  }
+  .brand .dot{
+    width:10px;height:10px;border-radius:50%;
+    background:var(--accent);
+    flex-shrink:0;
+  }
+  .eyebrow{
+    color:var(--accent);
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:.04em;
+    margin-bottom:14px;
+  }
+  h1{
+    font-size:clamp(28px, 4vw, 42px);
+    font-weight:700;
+    margin:0 0 16px;
+    line-height:1.3;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    max-width:520px;
+    margin:0 0 40px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:32px;
+    align-items:start;
+  }
+  @media (max-width:860px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  form.card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:32px;
+  }
+  .field{margin-bottom:22px;}
+  .field:last-of-type{margin-bottom:0;}
+  label{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  label .optional{
+    font-weight:400;
+    color:var(--ink-soft);
+    font-size:12.5px;
+  }
+  input[type=text], input[type=number], textarea{
+    width:100%;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    font-family:inherit;
+    font-size:15px;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  textarea{resize:vertical; min-height:64px;}
+  input:focus, textarea:focus{
+    border-color:var(--accent);
+    background:var(--surface);
+  }
+  .hint{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:6px;
+  }
+  .score-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  input[type=range]{
+    flex:1;
+    accent-color:var(--accent);
+  }
+  .score-value{
+    min-width:34px;
+    text-align:center;
+    font-weight:700;
+    color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+
+  button.submit{
+    width:100%;
+    margin-top:28px;
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:14px 20px;
+    font-family:inherit;
+    font-size:15.5px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    transition:opacity .15s ease, transform .1s ease;
+  }
+  button.submit:hover{opacity:.92;}
+  button.submit:active{transform:scale(.99);}
+  button.submit:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+  }
+  .spinner{
+    width:16px;height:16px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;
+    display:none;
+    animation:spin .7s linear infinite;
+  }
+  button.submit.loading .spinner{display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .status{
+    margin-top:16px;
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:14px;
+    display:none;
+  }
+  .status.show{display:block;}
+  .status.ok{background:var(--accent-soft); color:#265348; border:1px solid #C7DED6;}
+  .status.err{background:#FBEAEA; color:#7A2E2E; border:1px solid #F1CFCF;}
+
+  /* Signature preview card */
+  .preview-shell{
+    position:sticky;
+    top:32px;
+  }
+  .preview-label{
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .preview-label .pulse{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--accent);
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1;} 50%{opacity:.35;}
+  }
+  .opportunity-card{
+    background:var(--ink);
+    color:#fff;
+    border-radius:var(--radius);
+    padding:26px;
+    position:relative;
+    overflow:hidden;
+  }
+  .opportunity-card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(120% 80% at 100% 0%, rgba(63,125,110,.35), transparent 60%);
+    pointer-events:none;
+  }
+  .opp-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:18px;
+    position:relative;
+  }
+  .opp-badge{
+    background:var(--accent);
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    padding:4px 10px;
+    border-radius:999px;
+  }
+  .opp-score{
+    font-size:13px;
+    color:#B9C7C0;
+    font-variant-numeric:tabular-nums;
+  }
+  .opp-title{
+    font-size:19px;
+    font-weight:700;
+    margin:0 0 10px;
+    position:relative;
+    min-height:52px;
+  }
+  .opp-reason{
+    font-size:13.5px;
+    color:#C7D2CC;
+    margin:0 0 18px;
+    position:relative;
+  }
+  .opp-divider{
+    height:1px;
+    background:rgba(255,255,255,.12);
+    margin:0 0 16px;
+  }
+  .opp-suggested{
+    font-size:13px;
+    color:#EDEFEA;
+    background:rgba(255,255,255,.06);
+    border-radius:10px;
+    padding:12px 14px;
+    position:relative;
+  }
+  .opp-foot{
+    margin-top:16px;
+    font-size:11.5px;
+    color:#8FA098;
+    display:flex;
+    justify-content:space-between;
+    position:relative;
+  }
+  .preview-note{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:14px;
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand"><span class="dot"></span>رادار الفرص</div>
+  </header>
+
+  <div class="eyebrow">تسجيل مستخدم جديد</div>
+  <h1>وصّل اهتماماتك، ودعنا نراقب الأخبار نيابة عنك</h1>
+  <p class="lede">
+    أدخل اهتماماتك ومصادرك، وسيقوم النظام تلقائيًا برصد الأخبار المرتبطة،
+    وتحليل أهميتها، وإرسال بطاقة فرصة محتوى جاهزة إلى Telegram كل يوم.
+  </p>
+
+  <div class="grid">
+
+    <form class="card" id="signupForm" novalidate>
+
+      <div class="field">
+        <label for="name">الاسم <span class="optional">اختياري</span></label>
+        <input type="text" id="name" name="name" placeholder="مثال: عبدالإله">
+      </div>
+
+      <div class="field">
+        <label for="telegram_id">معرّف Telegram (Chat ID)</label>
+        <input type="text" id="telegram_id" name="telegram_id" placeholder="مثال: 123456789" required>
+        <div class="hint">افتح Telegram وابحث عن <strong>@userinfobot</strong>، اضغط Start، وانسخ رقم الـ Id الذي يرسله لك.</div>
+      </div>
+
+      <div class="field">
+        <label for="interests">اهتماماتك</label>
+        <textarea id="interests" name="interests" placeholder="مثال: الذكاء الاصطناعي، الأتمتة، n8n" required></textarea>
+        <div class="hint">افصل بين كل اهتمام وآخر بفاصلة.</div>
+      </div>
+
+      <div class="field">
+        <label for="rss_urls">روابط RSS</label>
+        <textarea id="rss_urls" name="rss_urls" placeholder="https://example.com/rss.xml" required></textarea>
+        <div class="hint">تقدر تضيف أكثر من رابط، مفصولة بفاصلة.</div>
+      </div>
+
+      <div class="field">
+        <label for="x_accounts">حسابات X <span class="optional">اختياري</span></label>
+        <input type="text" id="x_accounts" name="x_accounts" placeholder="OpenAI, Anthropic">
+      </div>
+
+      <div class="field">
+        <label for="min_score">الحد الأدنى لدرجة الأهمية <span class="optional">اختياري</span></label>
+        <div class="score-row">
+          <input type="range" id="min_score" name="min_score" min="0" max="100" value="70">
+          <span class="score-value" id="scoreValue">70</span>
+        </div>
+        <div class="hint">الأخبار الأقل من هذا الحد لن تُرسل لك.</div>
+      </div>
+
+      <button type="submit" class="submit" id="submitBtn">
+        <span class="spinner"></span>
+        <span class="btn-text">تسجيل ومتابعة الأخبار</span>
+      </button>
+
+      <div class="status" id="statusBox"></div>
+    </form>
+
+    <div class="preview-shell">
+      <div class="preview-label"><span class="pulse"></span>هذا مثال حي لبطاقة فرصة محتوى</div>
+      <div class="opportunity-card">
+        <div class="opp-top">
+          <span class="opp-badge">فرصة جديدة</span>
+          <span class="opp-score" id="pvScore">90/100</span>
+        </div>
+        <p class="opp-title" id="pvTitle">OpenAI تختبر الإعلانات داخل ChatGPT</p>
+        <p class="opp-reason" id="pvReason">مرتبط مباشرة باهتمامك بالذكاء الاصطناعي، ويعكس تحوّلًا مهمًا في نموذج عمل أبرز أدوات القطاع.</p>
+        <div class="opp-divider"></div>
+        <div class="opp-suggested" id="pvContent">
+          أعلنت OpenAI عن بدء اختبار الإعلانات في ChatGPT لدعم الوصول المجاني، مع الحفاظ على استقلالية الإجابات. #الذكاء_الاصطناعي
+        </div>
+        <div class="opp-foot">
+          <span>عبر Telegram</span>
+          <span>يوميًا</span>
+        </div>
+      </div>
+      <div class="preview-note">حدّث اهتماماتك في النموذج لترى العنوان يتغيّر</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ====== عدّل هذا الرابط إلى Production URL الخاص بـ Webhook في n8n ======
+  const WEBHOOK_URL = "https://abdulelah518.app.n8n.cloud/webhook/register-user";
+  // ========================================================================
+
+  const form = document.getElementById('signupForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusBox = document.getElementById('statusBox');
+  const scoreInput = document.getElementById('min_score');
+  const scoreValue = document.getElementById('scoreValue');
+  const interestsInput = document.getElementById('interests');
+  const pvTitle = document.getElementById('pvTitle');
+
+  scoreInput.addEventListener('input', () => {
+    scoreValue.textContent = scoreInput.value;
+  });
+
+  // تحديث حي لعنوان بطاقة المعاينة بناءً على أول اهتمام يكتبه المستخدم
+  interestsInput.addEventListener('input', () => {
+    const first = interestsInput.value.split(',')[0].trim();
+    if (first.length > 1) {
+      pvTitle.textContent = `أحدث تطورات ${first} — لماذا تستحق انتباهك اليوم`;
+    } else {
+      pvTitle.textContent = 'OpenAI تختبر الإعلانات داخل ChatGPT';
+    }
+  });
+
+  function setLoading(isLoading){
+    submitBtn.disabled = isLoading;
+    submitBtn.classList.toggle('loading', isLoading);
+    submitBtn.querySelector('.btn-text').textContent = isLoading ? 'يتم الإرسال...' : 'تسجيل ومتابعة الأخبار';
+  }
+
+  function showStatus(message, ok){
+    statusBox.textContent = message;
+    statusBox.className = 'status show ' + (ok ? 'ok' : 'err');
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusBox.className = 'status';
+
+    const telegram_id = document.getElementById('telegram_id').value.trim();
+    const interests = document.getElementById('interests').value.trim();
+    const rss_urls = document.getElementById('rss_urls').value.trim();
+
+    if (!telegram_id || !interests || !rss_urls) {
+      showStatus('يرجى تعبئة جميع الحقول المطلوبة: معرّف Telegram، الاهتمامات، وروابط RSS.', false);
+      return;
+    }
+
+    const payload = {
+      name: document.getElementById('name').value.trim(),
+      telegram_id,
+      interests,
+      rss_urls,
+      x_accounts: document.getElementById('x_accounts').value.trim(),
+      min_score: scoreInput.value
+    };
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        showStatus(data.message || 'تم تسجيل بياناتك بنجاح', true);
+        form.reset();
+        scoreValue.textContent = '70';
+        scoreInput.value = 70;
+      } else {
+        showStatus(data.error || data.message || 'تعذر تنفيذ الطلب، حاول مرة أخرى.', false);
+      }
+    } catch (err) {
+      showStatus('تعذر الاتصال بالخدمة. تحقق من اتصالك بالإنترنت وحاول مرة أخرى.', false);
+    } finally {
+      setLoading(false);
+    }
+  });
+</script>
+</body>
+</html>

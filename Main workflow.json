@@ -1,0 +1,658 @@
+{
+  "name": "first project",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        -224
+      ],
+      "id": "e1f1e675-29e3-4a56-8068-9800c35a69f2",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY",
+          "mode": "list",
+          "cachedResultName": "مشروع الترند",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "الورقة1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        160,
+        -224
+      ],
+      "id": "be416bf1-7062-4d13-9ce1-d362b3b3cfe8",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3ruI76dtDR9RPHyH",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "da620e19-37df-44e9-ae1e-1cb08546b225",
+              "name": "rss_sources_array",
+              "value": "={{ $json.rss_urls.split(',').map(url => url.trim()) }}",
+              "type": "array"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        384,
+        -224
+      ],
+      "id": "661e8210-8a76-4a3a-bbb0-5680c190f079",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "rss_sources_array",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        608,
+        -224
+      ],
+      "id": "cdd7a230-fc75-4efa-a6f6-ed86e718655a",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.rss_sources_array }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        256
+      ],
+      "id": "c7fc9359-5fdf-47d2-8066-4ed4d180e7df",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        512,
+        16
+      ],
+      "id": "a51359d0-623e-41b1-aefe-0b5a16f44b1c",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b9a0927d-87aa-48d6-b6b0-7914ac1077a9",
+              "name": "user_id",
+              "value": "={{ $('Split Out').item.json.user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "8ef786bc-a8ff-47c9-aa4c-b2531cc7ca7e",
+              "name": "telegram_id",
+              "value": "={{ $('Split Out').item.json.telegram_id }}",
+              "type": "string"
+            },
+            {
+              "id": "14e12f56-411b-4a09-bafd-43ea97aef255",
+              "name": "interests",
+              "value": "={{ $('Split Out').item.json.interests }}",
+              "type": "string"
+            },
+            {
+              "id": "edfca2c3-497a-4cd3-8ec3-718869460e47",
+              "name": "min_score",
+              "value": "={{ $('Split Out').item.json.min_score }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        768,
+        272
+      ],
+      "id": "b1022109-76ab-4879-8d5a-86f8b7671117",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// نجمع كل الأخبار حسب user_id\nconst grouped = {};\n\nfor (const item of $input.all()) {\n  const data = item.json;\n  const uid = data.user_id;\n\n  if (!grouped[uid]) {\n    grouped[uid] = [];\n  }\n  grouped[uid].push(data);\n}\n\n// نفرز كل مجموعة حسب التاريخ (الأحدث أول) وناخذ أول 5\nconst result = [];\n\nfor (const uid in grouped) {\n  const sorted = grouped[uid].sort((a, b) => {\n    return new Date(b.isoDate) - new Date(a.isoDate);\n  });\n\n  const latest5 = sorted.slice(0, 1);\n\n  for (const news of latest5) {\n    result.push({ json: news });\n  }\n}\n\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "3151dcd4-2371-4467-a247-6e2eae6d460d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this news item for the user:\n\nTitle: {{ $json.title }}\nContent: {{ $json.content }}\nAdditional context: {{ $json.extra_description }}\nLink: {{ $json.link }}\nPublished: {{ $json.pubDate }}\n\nUser interests: {{ $json.interests }}\nUser ID: {{ $json.user_id }}\nMinimum score required: {{ $json.min_score }}",
+        "options": {
+          "systemMessage": "You are a content opportunity assistant. Your job is to analyze one \nnews item and decide whether it matches a specific user's interests \nclosely enough to become a content opportunity.\n\nInput data you receive for each news item:\n- title, content, link, pubDate: details of the news item\n- interests: the user's stated interests (comma-separated)\n- user_id: unique identifier for the user\n- min_score: the minimum opportunity score this user accepts (0-100)\n\nSteps to follow:\n1. Evaluate how relevant the news item is to the user's interests and \n   assign an Opportunity Score from 0 to 100.\n2. If the score is below min_score, return \"should_send\": false with a \n   short reason.\n3. If the score meets or exceeds min_score, write:\n   - a short reason (2-3 sentences) explaining why this news matters to \n     this specific user\n   - a suggested post ready for publishing, written in Arabic. Keep it \n  concise (under 280 characters) so it works well across platforms \n  like X and LinkedIn - the user can adapt the tone if needed.\n4. Only if you decide should_send is true, use the Google Sheets tool \n   to append a new row with user_id, news_link (the article link), and \n   today's date to the Sent News Log sheet.\n\nStrict rules:\n- Never invent information not present in the original news content.\n- If the news data is incomplete (missing title or content), return \n  \"error\": \"incomplete news data\" and do not attempt analysis.\n- Always return the result as JSON only, with no extra text outside \n  the JSON object.\n-Call the Google Sheets tool exactly once, only after your final \ndecision on should_send. Never call it more than once per news item.\n\nRequired output format (JSON only):\n{\n  \"should_send\": true,\n  \"score\": 85,\n  \"reason\": \"short explanation of why this news matters to this user\",\n  \"suggested_content\": \"the suggested post text in Arabic\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1136,
+        144
+      ],
+      "id": "7f62867b-35bc-4dfd-bcab-e334c5446edf",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash",
+        "options": {
+          "maxOutputTokens": 8000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        352
+      ],
+      "id": "73da4605-1f4f-482f-9a8f-df2ee36b1837",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "XoW8ibxI5iTEAbpq",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsed = JSON.parse($input.first().json.output);\n\nconst original = $('Code in JavaScript2').first().json;\n\nreturn [{\n  json: {\n    ...parsed,\n    telegram_id: original.telegram_id,\n    link: original.link,\n    user_id: original.user_id\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        144
+      ],
+      "id": "d07988f9-ff34-4bd5-8b9d-55cc96f90a8e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8140a9eb-2bb0-4cef-a4a5-d32684881c2d",
+              "leftValue": "={{ $json.should_send }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1648,
+        160
+      ],
+      "id": "c067a124-7a05-4d52-9139-7e7b16cd87bf",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY",
+          "mode": "list",
+          "cachedResultName": "مشروع الترند",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1775956755,
+          "mode": "list",
+          "cachedResultName": "Sent News Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY/edit#gid=1775956755"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1088,
+        -224
+      ],
+      "id": "879a240b-fdaf-41cd-99a9-6a45efbb8bae",
+      "name": "Get row(s) in sheet1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3ruI76dtDR9RPHyH",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const sentNews = $('Get row(s) in sheet1').all()\n  .map(item => item.json)\n  .filter(row => row.user_id && row.news_link);\n\nconst sentSet = new Set(\n  sentNews.map(row => `${row.user_id}_${row.news_link}`)\n);\n\nconst newsItems = $('Code in JavaScript').all();\n\nconst newItems = newsItems.filter(item => {\n  const key = `${item.json.user_id}_${item.json.link}`;\n  return !sentSet.has(key);\n});\n\nreturn newItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        -224
+      ],
+      "id": "d33481ca-2297-4453-a977-57bf20d67fe8",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool ONLY after you have decided should_send is true for a \nnews item. Append a new row with the user_id, the article link \n(news_link), and today's date (sent_date) to log that this news was \nsent to this user. Do not use this tool if should_send is false.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY",
+          "mode": "list",
+          "cachedResultName": "مشروع الترند",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1775956755,
+          "mode": "list",
+          "cachedResultName": "Sent News Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1rgCFkNVxkgIOYS3Qqt58wjQzyJYB2IlNDzT15Sm7eSY/edit#gid=1775956755"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('user_id', `The user_id value from the news item being analyzed`, 'string') }}",
+            "news_link": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('news_link', `The article link (news_link/link) of the news item`, 'string') }}",
+            "sent_date": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('sent_date', `Today's date in ISO format`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "news_link",
+              "displayName": "news_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sent_date",
+              "displayName": "sent_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1296,
+        352
+      ],
+      "id": "fc172e86-a60e-4122-98c1-96ad8a281c1b",
+      "name": "Append row in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3ruI76dtDR9RPHyH",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1075246431",
+        "text": "=📰 فرصة محتوى جديدة  {{ $json.reason }}  \n✍️ المحتوى المقترح: {{ $json.suggested_content }}  📊 درجة الأهمية: {{ $json.score }}/100  \n🔗 المصدر: {{ $json.link }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1872,
+        112
+      ],
+      "id": "4ab966c6-9f6b-4631-afcd-ffb49f63e161",
+      "name": "Send a text message",
+      "webhookId": "23447408-d227-47a5-993a-5f8500797f37",
+      "credentials": {
+        "telegramApi": {
+          "id": "txVkj6p1fyMDUZYY",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.microlink.io",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.link }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1520,
+        -240
+      ],
+      "id": "631e2e28-9a3e-4059-b487-a2b9e2b8a628",
+      "name": "HTTP Request",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Code in JavaScript2').first().json;\nconst apiResult = $input.first().json;\n\nreturn [{\n  json: {\n    ...original,\n    extra_description: apiResult?.data?.description || \"\",\n    extra_image: apiResult?.data?.image?.url || \"\"\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        -240
+      ],
+      "id": "7e07cc86-8019-4d09-af08-1b5a1d674d09",
+      "name": "Code in JavaScript3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a1144184-b92f-4a31-9985-ea9567f4f106",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bf4cc02b7e0712946ccfc5c6001619d6d18f827c4532394095636ce0bffb49d4"
+  },
+  "nodeGroups": [],
+  "id": "wH12FsQghde51Vkz",
+  "tags": []
+}
